@@ -184,3 +184,26 @@ However, we need not put all points on one side of the connection. It would suff
 }
 </script>
 No matter which red point you connect the center blue point with, the remaining red and blue point will end up on different sides of the connection (however, you could still connect them without intersecting with the existing connection).
+
+However, notice that if we connect an _outer_ blue point with a red point, _then_ the remaining points end up on the same side.
+<svg viewbox="0 0 1 0.85" id="betterLine" xmlns="http://www.w3.org/2000/svg" class="small">
+<circle cx="0.5" cy="0.5" r="0.018" fill="none" style="stroke:#888; stroke-width:0.005"/>
+</svg>
+<script>
+{
+  const svg = document.getElementById("betterLine")
+  connections = []
+  for (let i of [0, 1]) {
+    const direction_x = Math.cos(2*Math.PI*(0.75+i/3))
+    const direction_y = Math.sin(2*Math.PI*(0.75+i/3))
+    connections.push([0.5 + direction_x*0.35, 0.5 + direction_y*0.35])
+  }
+  draw_connection(svg, connections[0], connections[1])
+  draw_point(svg, [0.5, 0.5], "blue")
+  for (let i=0; i<3; i++) {
+    const direction_x = Math.cos(2*Math.PI*(0.75+i/3))
+    const direction_y = Math.sin(2*Math.PI*(0.75+i/3))
+    draw_point(svg, [0.5 + direction_x*0.35, 0.5 + direction_y*0.35], i==0 ? "blue" : "red")
+  }
+}
+</script>
