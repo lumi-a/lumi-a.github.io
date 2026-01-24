@@ -64,7 +64,7 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
 </div>
 
 <script>
-  function draw_point(svg, coordinates, blue_or_red) {
+function draw_point(svg, coordinates, blue_or_red) {
   const point = document.createElementNS("http://www.w3.org/2000/svg", "circle")
   point.setAttribute("cx", `${coordinates[0]}`)
   point.setAttribute("cy", `${coordinates[1]}`)
@@ -229,3 +229,4 @@ This last idea can be made to work. We can always find a pair of points such tha
   }
 }
 </script>
+TODO: Make this interactive.
