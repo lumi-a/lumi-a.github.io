@@ -139,11 +139,25 @@ Connecting the closest pair does not work:
 <script>
 {
   const svg = document.getElementById("badClosest")
+  draw_connection(svg, [0.5, 0.4], [0.5, 0.6])
   draw_point(svg, [0.1, 0.5], "blue")
   draw_point(svg, [0.5, 0.4], "blue")
   draw_point(svg, [0.5, 0.6], "red")
   draw_point(svg, [0.9, 0.5], "red")
-  draw_connection(svg, [0.5, 0.4], [0.5, 0.6])
 }
 </script>
 
+Trying to connect an "outermost" pair does not work, i.e. a pair such that all other points are on only one side of the connection, because such a pair of points need not exist:
+<svg viewbox="0 0 1 0.85" id="badOuter" xmlns="http://www.w3.org/2000/svg"></svg>
+<script>
+{
+  const svg = document.getElementById("badOuter")
+  const num_points = 3
+  for (let i=0; i<num_points; i++) {
+    const direction_x = Math.cos(2*Math.PI*(0.75+i/num_points))
+    const direction_y = Math.sin(2*Math.PI*(0.75+i/num_points))
+    draw_point(svg, [0.5 + direction_x*0.35, 0.52 + direction_y*0.35], "blue")
+    draw_point(svg, [0.5 + direction_x*0.45, 0.52 + direction_y*0.45], "red")
+  }
+}
+</script>
