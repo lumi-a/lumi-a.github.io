@@ -57,28 +57,7 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
 </div>
 
 <script>
-const svg = document.getElementById("example")
-const points = [[[0.54, 0.29], [0.73, 0.05]],
- [[0.82, 0.98], [0.53, 0.86]],
- [[0.41, 0.83], [0.44, 0.79]],
- [[0.37, 0.42], [0.08, 0.3 ]],
- [[0.1, 0.2], [0.35, 0.07]],
- [[0.05, 0.78], [0.05, 0.28]],
- [[0.76, 0.34], [0.87, 0.28]],
- [[0.18, 0.67], [0.67, 0.51]],
- [[0.16, 0.66], [0.47, 0.4 ]],
- [[0.81, 0.85], [0.28, 0.74]]]
-const bad_points = [[[0.05, 0.78], [0.35, 0.07]],
- [[0.37, 0.42], [0.08, 0.3 ]],
- [[0.54, 0.29], [0.73, 0.05]],
- [[0.82, 0.98], [0.53, 0.86]],
- [[0.41, 0.83], [0.44, 0.79]],
- [[0.76, 0.34], [0.87, 0.28]],
- [[0.1, 0.2], [0.05, 0.28]],
- [[0.18, 0.67], [0.67, 0.51]],
- [[0.16, 0.66], [0.47, 0.4 ]],
- [[0.81, 0.85], [0.28, 0.74]]]
-function draw_point(svg, coordinates, blue_or_red) {
+  function draw_point(svg, coordinates, blue_or_red) {
   const point = document.createElementNS("http://www.w3.org/2000/svg", "circle")
   point.setAttribute("cx", `${coordinates[0]}`)
   point.setAttribute("cy", `${coordinates[1]}`)
@@ -97,31 +76,74 @@ function draw_connection(svg, point_a, point_b, classes = ["alwaysVisible"]) {
   connection.classList.add(...classes)
   svg.appendChild(connection)
 }
-// Draw good connections
-for (const point of points) {
-  draw_connection(svg, point[0], point[1], ["goodHide"])
+{
+  const svg = document.getElementById("example")
+  const points = [[[0.54, 0.29], [0.73, 0.05]],
+  [[0.82, 0.98], [0.53, 0.86]],
+  [[0.41, 0.83], [0.44, 0.79]],
+  [[0.37, 0.42], [0.08, 0.3 ]],
+  [[0.1, 0.2], [0.35, 0.07]],
+  [[0.05, 0.78], [0.05, 0.28]],
+  [[0.76, 0.34], [0.87, 0.28]],
+  [[0.18, 0.67], [0.67, 0.51]],
+  [[0.16, 0.66], [0.47, 0.4 ]],
+  [[0.81, 0.85], [0.28, 0.74]]]
+  const bad_points = [[[0.05, 0.78], [0.35, 0.07]],
+  [[0.37, 0.42], [0.08, 0.3 ]],
+  [[0.54, 0.29], [0.73, 0.05]],
+  [[0.82, 0.98], [0.53, 0.86]],
+  [[0.41, 0.83], [0.44, 0.79]],
+  [[0.76, 0.34], [0.87, 0.28]],
+  [[0.1, 0.2], [0.05, 0.28]],
+  [[0.18, 0.67], [0.67, 0.51]],
+  [[0.16, 0.66], [0.47, 0.4 ]],
+  [[0.81, 0.85], [0.28, 0.74]]]
+
+  // Draw good connections
+  for (const point of points) {
+    draw_connection(svg, point[0], point[1], ["goodHide"])
+  }
+  // Draw bad connections, draw red lines first
+  draw_connection(svg, bad_points[0][0], bad_points[0][1], ["badHide", "invalid"])
+  for (const point of bad_points.slice(1)) {
+    draw_connection(svg, point[0], point[1], ["badHide"])
+  }
+  // Draw points on top
+  for (const point of points) {
+    // doesn't really matter which one is blue and which one is red
+    draw_point(svg, point[0], "blue")
+    draw_point(svg, point[1], "red")
+  }
+  document.getElementById("examplePointsOnly").addEventListener("click", () => {
+    svg.classList.remove("showValid")
+    svg.classList.remove("showInvalid")
+  })
+  document.getElementById("exampleShowInvalid").addEventListener("click", () => {
+    svg.classList.remove("showValid")
+    svg.classList.add("showInvalid")
+  })
+  document.getElementById("exampleShowValid").addEventListener("click", () => {
+    svg.classList.add("showValid")
+    svg.classList.remove("showInvalid")
+  })
 }
-// Draw bad connections, draw red lines first
-draw_connection(svg, bad_points[0][0], bad_points[0][1], ["badHide", "invalid"])
-for (const point of bad_points.slice(1)) {
-  draw_connection(svg, point[0], point[1], ["badHide"])
-}
-// Draw points on top
-for (const point of points) {
-  // doesn't really matter which one is blue and which one is red
-  draw_point(svg, point[0], "blue")
-  draw_point(svg, point[1], "red")
-}
-document.getElementById("examplePointsOnly").addEventListener("click", () => {
-  svg.classList.remove("showValid")
-  svg.classList.remove("showInvalid")
-})
-document.getElementById("exampleShowInvalid").addEventListener("click", () => {
-  svg.classList.remove("showValid")
-  svg.classList.add("showInvalid")
-})
-document.getElementById("exampleShowValid").addEventListener("click", () => {
-  svg.classList.add("showValid")
-  svg.classList.remove("showInvalid")
-})
 </script>
+
+
+## Solutions that don't work
+
+Trying to provide all the connections at once, and proving that they do not intersect, seems difficult. Instead, I thought, it would help to only provide _one_ connection, and somehow prove that the puzzle remains possible.
+
+Connecting the closest pair does not work:
+<svg viewbox="0 0.3 1 0.4" id="badClosest" xmlns="http://www.w3.org/2000/svg"></svg>
+<script>
+{
+  const svg = document.getElementById("badClosest")
+  draw_point(svg, [0.1, 0.5], "blue")
+  draw_point(svg, [0.5, 0.4], "blue")
+  draw_point(svg, [0.5, 0.6], "red")
+  draw_point(svg, [0.9, 0.5], "red")
+  draw_connection(svg, [0.5, 0.4], [0.5, 0.6])
+}
+</script>
+
