@@ -20,6 +20,12 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
     margin: 2em auto;
     border: 1px solid #ccc;
   }
+  svg.small {
+    max-width: 375px;
+  }
+  svg.tiny {
+    max-width: 250px;
+  }
   svg circle.point.red {
     fill: #EE6677; /* // https://sronpersonalpages.nl/~pault/ */
   }
@@ -135,7 +141,7 @@ function draw_connection(svg, point_a, point_b, classes = ["alwaysVisible"]) {
 Trying to provide all the connections at once, and proving that they do not intersect, seems difficult. Instead, I thought, it would help to only provide _one_ connection, and somehow prove that the puzzle remains possible.
 
 Connecting the closest pair does not work:
-<svg viewbox="0 0.3 1 0.4" id="badClosest" xmlns="http://www.w3.org/2000/svg"></svg>
+<svg viewbox="0 0.3 1 0.4" id="badClosest" xmlns="http://www.w3.org/2000/svg" class="small"></svg>
 <script>
 {
   const svg = document.getElementById("badClosest")
@@ -148,7 +154,7 @@ Connecting the closest pair does not work:
 </script>
 
 Trying to connect an "outermost" pair does not work, i.e. a pair such that all other points are on only one side of the connection, because such a pair of points need not exist:
-<svg viewbox="0 0 1 0.85" id="badOuter" xmlns="http://www.w3.org/2000/svg"></svg>
+<svg viewbox="0 0 1 0.85" id="badOuter" xmlns="http://www.w3.org/2000/svg" class="small"></svg>
 <script>
 {
   const svg = document.getElementById("badOuter")
@@ -161,3 +167,20 @@ Trying to connect an "outermost" pair does not work, i.e. a pair such that all o
   }
 }
 </script>
+
+However, we need not put all points on one side of the connection. It would suffice to have a connection such that, on the "left" side of the connection, the number of blue and red points is equal, and on the "right" side of the connection, the number of blue and red points is equal. I considered starting with some fixed blue point, and somehow checking all the red points for possible connections. However, that need not work, either, consider the blue point in the center here:
+<svg viewbox="0 0 1 0.85" id="badLine" xmlns="http://www.w3.org/2000/svg" class="small">
+<circle cx="0.5" cy="0.5" r="0.018" fill="none" style="stroke:#888; stroke-width:0.005"/>
+</svg>
+<script>
+{
+  const svg = document.getElementById("badLine")
+  draw_point(svg, [0.5, 0.5], "blue")
+  for (let i=0; i<3; i++) {
+    const direction_x = Math.cos(2*Math.PI*(0.75+i/3))
+    const direction_y = Math.sin(2*Math.PI*(0.75+i/3))
+    draw_point(svg, [0.5 + direction_x*0.35, 0.5 + direction_y*0.35], i==0 ? "blue" : "red")
+  }
+}
+</script>
+No matter which red point you connect the center blue point with, the remaining red and blue point will end up on different sides of the connection (however, you could still connect them without intersecting with the existing connection).
