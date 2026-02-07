@@ -386,28 +386,27 @@ Trying to provide all the connections at once, and proving that they do not inte
 Connecting the closest pair does not work:
 <svg id="badClosest" class="small"></svg>
 <script>
-{
-  const svg = document.getElementById("badClosest")
   create_interactive_svg("badClosest", "0 0.3 1 0.4", [[0.1, 0.5, "blue"], [0.5, 0.4, "blue"], [0.5, 0.6, "red"], [0.9, 0.5, "red"]], [[0.5,0.4, 0.5,0.6]])
-}
+</script>
+
+
+Trying to connect an "outermost" pair does not work, i.e. a pair such that all other points are on only one side of the connection, because such a pair of points need not exist:
+<svg id="badOuter" xmlns="http://www.w3.org/2000/svg" class="small"></svg>
+<script>
+  {
+    let points = []
+    const num_points = 3
+    for (let i=0; i<num_points; i++) {
+      const direction_x = Math.cos(2*Math.PI*(0.75+i/num_points))
+      const direction_y = Math.sin(2*Math.PI*(0.75+i/num_points))
+      points.push([0.5 + direction_x*0.35, 0.52 + direction_y*0.35, "blue"])
+      points.push([0.5 + direction_x*0.45, 0.52 + direction_y*0.45, "red"])
+    }
+    create_interactive_svg("badOuter", "0 0 1 0.85", points)
+  }
 </script>
 
 <!--
-
-Trying to connect an "outermost" pair does not work, i.e. a pair such that all other points are on only one side of the connection, because such a pair of points need not exist:
-<svg viewbox="0 0 1 0.85" id="badOuter" xmlns="http://www.w3.org/2000/svg" class="small"></svg>
-<script>
-{
-  const svg = document.getElementById("badOuter")
-  const num_points = 3
-  for (let i=0; i<num_points; i++) {
-    const direction_x = Math.cos(2*Math.PI*(0.75+i/num_points))
-    const direction_y = Math.sin(2*Math.PI*(0.75+i/num_points))
-    draw_point(svg, [0.5 + direction_x*0.35, 0.52 + direction_y*0.35], "blue")
-    draw_point(svg, [0.5 + direction_x*0.45, 0.52 + direction_y*0.45], "red")
-  }
-}
-</script>
 
 However, we need not put all points on one side of the connection. It would suffice to have a connection such that, on the "left" side of the connection, the number of blue and red points is equal, and on the "right" side of the connection, the number of blue and red points is equal. I considered starting with some fixed blue point, and somehow checking all the red points for possible connections. However, that need not work, either, consider the blue point in the center here:
 <svg viewbox="0 0 1 0.85" id="badLine" xmlns="http://www.w3.org/2000/svg" class="small">
