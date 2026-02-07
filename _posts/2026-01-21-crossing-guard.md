@@ -119,7 +119,22 @@ title: Crossing Guard
     } else if (state.active_point === nearest) {
       deactivate_all(state)
     } else if (state.active_point.color !== nearest.color) {
-      create_connection(svg, state.active_point, nearest)
+      // Check if this exact connection already exists
+      const existing_idx = state.connections.findIndex(conn =>
+        (conn.point_a === state.active_point && conn.point_b === nearest) ||
+        (conn.point_b === state.active_point && conn.point_a === nearest)
+      )
+      
+      if (existing_idx !== -1) {
+        // Remove existing connection
+        const conn = state.connections[existing_idx]
+        animate_out_and_remove(conn.element)
+        state.connections.splice(existing_idx, 1)
+        check_intersections(svg)
+      } else {
+        // Create new connection
+        create_connection(svg, state.active_point, nearest)
+      }
       deactivate_all(state)
     } else {
       activate_point(state, nearest)
@@ -363,24 +378,21 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
   })
 }
 </script>
-<!--
 
 ## Appproaches that don't work
 
 Trying to provide all the connections at once, and proving that they do not intersect, seems difficult. Instead, I thought, it would help to only provide _one_ connection, and somehow prove that the puzzle remains possible.
 
 Connecting the closest pair does not work:
-<svg viewbox="0 0.3 1 0.4" id="badClosest" xmlns="http://www.w3.org/2000/svg" class="small"></svg>
+<svg id="badClosest" class="small"></svg>
 <script>
 {
   const svg = document.getElementById("badClosest")
-  draw_connection(svg, [0.5, 0.4], [0.5, 0.6])
-  draw_point(svg, [0.1, 0.5], "blue")
-  draw_point(svg, [0.5, 0.4], "blue")
-  draw_point(svg, [0.5, 0.6], "red")
-  draw_point(svg, [0.9, 0.5], "red")
+  create_interactive_svg("badClosest", "0 0.3 1 0.4", [[0.1, 0.5, "blue"], [0.5, 0.4, "blue"], [0.5, 0.6, "red"], [0.9, 0.5, "red"]], [[0.5,0.4, 0.5,0.6]])
 }
 </script>
+
+<!--
 
 Trying to connect an "outermost" pair does not work, i.e. a pair such that all other points are on only one side of the connection, because such a pair of points need not exist:
 <svg viewbox="0 0 1 0.85" id="badOuter" xmlns="http://www.w3.org/2000/svg" class="small"></svg>
