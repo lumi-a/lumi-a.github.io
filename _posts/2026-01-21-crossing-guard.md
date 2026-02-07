@@ -33,7 +33,7 @@ title: Crossing Guard
     stroke: #888;
     stroke-width: 0.005;
     stroke-dasharray: 1.5 1.5;
-    transition: stroke-dashoffset .5s;
+    transition: stroke-dashoffset .5s, stroke .1s;
   }
   svg line.connection.invalid {
     stroke: #A37;
@@ -56,6 +56,12 @@ title: Crossing Guard
     }
     
     svg.setAttribute('viewBox', viewbox)
+    const connectionGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
+    connectionGroup.classList.add("connectionGroup")
+    const pointGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
+    pointGroup.classList.add("pointGroup")
+    svg.appendChild(connectionGroup)
+    svg.appendChild(pointGroup)
     
     const state = {
       points: [],
@@ -71,8 +77,7 @@ title: Crossing Guard
       circle.setAttribute("cy", y)
       circle.setAttribute("r", "0.01")
       circle.classList.add("point", color)
-      svg.appendChild(circle)
-      
+      pointGroup.appendChild(circle)
       state.points.push({ element: circle, x, y, color })
     })
     
@@ -81,7 +86,7 @@ title: Crossing Guard
     
     // Draw initial connections if any
     if (initial_connections.length > 0) {
-      show_connections(svg, initial_connections)
+      show_connections(svg_id, initial_connections)
     }
     
     return svg
@@ -165,7 +170,7 @@ title: Crossing Guard
     line.setAttribute("y2", point_b.y)
     line.classList.add("connection")
 
-    svg.appendChild(line)
+    svg.querySelector(".connectionGroup").appendChild(line)
 
     if (!skip_animation) {
         const length = Math.hypot(point_b.x - point_a.x, point_b.y - point_a.y)
@@ -305,7 +310,7 @@ title: Crossing Guard
      line.style.strokeDasharray = `${length} ${length}`
      line.style.strokeDashoffset = length
      
-     svg.appendChild(line)
+     svg.querySelector(".connectionGroup").appendChild(line)
      
      setTimeout(() => {
        line.style.strokeDashoffset = 0
@@ -414,32 +419,16 @@ However, we need not put all points on one side of the connection. It would suff
 create_interactive_svg("badLine", "0 0 1 0.85", [[0.5, 0.5, "blue"], [0.5, 0.15, "red"], [0.803, 0.675, "blue"], [0.197, 0.675, "red"]])
 </script>
 
-<!--
-
 No matter which red point you connect the center blue point with, the remaining red and blue point will end up on different sides of the connection (however, you could still connect them without intersecting with the existing connection).
 
-However, notice that if we connect an _outer_ blue point with a red point, _then_ the remaining points end up on the same side.
-<svg viewbox="0 0 1 0.85" id="betterLine" xmlns="http://www.w3.org/2000/svg" class="small">
-<circle cx="0.5" cy="0.5" r="0.018" fill="none" style="stroke:#888; stroke-width:0.005"/>
+However, notice that if we connect the _outer_ blue point with a red point, _then_ the remaining points end up on the same side.
+<svg id="betterLine" class="small">
 </svg>
 <script>
-{
-  const svg = document.getElementById("betterLine")
-  connections = []
-  for (let i of [0, 1]) {
-    const direction_x = Math.cos(2*Math.PI*(0.75+i/3))
-    const direction_y = Math.sin(2*Math.PI*(0.75+i/3))
-    connections.push([0.5 + direction_x*0.35, 0.5 + direction_y*0.35])
-  }
-  draw_connection(svg, connections[0], connections[1])
-  draw_point(svg, [0.5, 0.5], "blue")
-  for (let i=0; i<3; i++) {
-    const direction_x = Math.cos(2*Math.PI*(0.75+i/3))
-    const direction_y = Math.sin(2*Math.PI*(0.75+i/3))
-    draw_point(svg, [0.5 + direction_x*0.35, 0.5 + direction_y*0.35], i==0 ? "blue" : "red")
-  }
-}
+create_interactive_svg("betterLine", "0 0 1 0.85", [[0.5, 0.5, "blue"], [0.5, 0.15, "red"], [0.803, 0.675, "blue"], [0.197, 0.675, "red"]], [[0.803, 0.675, 0.5, 0.15]])
 </script>
+
+<!--
 
 ## A working approach
 This last idea can be made to work. We can always find a pair of points such that, if we connect them, both sides of the connections are _balanced_: The number of blue points and red points on the "left" side of the connection is equal, and the number of blue points and red points on the "right" side of the connection is equal. Note that, because we assumed that no three points are collinear, all points are on either the left or the right side of the connection.
