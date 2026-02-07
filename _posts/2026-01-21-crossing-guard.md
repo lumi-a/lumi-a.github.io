@@ -3,14 +3,6 @@ layout: default
 title: Crossing Guard
 ---
 
-# Crossing Guard
-
-Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016/09/03/crossing-guard/):
-
-> Suppose some $2n$ points in the plane are chosen so that no three are collinear, and then half are colored red and half blue. Will it always be possible to connect each red point with a blue one, in pairs, so that none of the connecting lines intersect?
-
-"No three are collinear" means that no three points lie on a straight line. Although not specified, the "connection" between two points must be a straight line itself (otherwise it would always be easy to make such connections).
-
 <style>
   svg {
     max-width: 500px;
@@ -28,10 +20,14 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
     max-width: 250px;
   }
   svg circle.point.red {
-    fill: #EE6677; /* // https://sronpersonalpages.nl/~pault/ */
+    fill: #E67; /* // https://sronpersonalpages.nl/~pault/ */
   }
   svg circle.point.blue {
-    fill: #4477AA; 
+    fill: #47A; 
+  }
+  svg circle.point.active {
+    stroke: #888;
+    stroke-width: 0.005;
   }
   svg line.connection {
     stroke: #888;
@@ -39,14 +35,8 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
     stroke-dasharray: 1.5 1.5;
     transition: stroke-dashoffset .5s;
   }
-  svg:not(.showValid) line.goodHide {
-    stroke-dashoffset: 1.5;
-  }
-  svg.showInvalid line.invalid {
-    stroke: red;
-  }
-  svg:not(.showInvalid) line.badHide {
-    stroke-dashoffset: 1.5;
+  svg line.connection.invalid {
+    stroke: #A37;
   }
   div.center {
     display: flex;
@@ -55,7 +45,273 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
     gap: 0.5em;
   }
 </style>
-<svg viewbox="0 0 1 1" id="example" xmlns="http://www.w3.org/2000/svg">
+<script>
+  const svg_states = new Map()
+
+  function create_interactive_svg(svg_id, viewbox, points, initial_connections = []) {
+    const svg = document.getElementById(svg_id)
+    if (!svg) {
+      console.error(`SVG with id "${svg_id}" not found`)
+      return
+    }
+    
+    svg.setAttribute('viewBox', viewbox)
+    
+    const state = {
+      points: [],
+      connections: [],
+      active_point: null,
+      initial_connections: initial_connections
+    }
+    
+    // Create points
+    points.forEach(([x, y, color]) => {
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+      circle.setAttribute("cx", x)
+      circle.setAttribute("cy", y)
+      circle.setAttribute("r", "0.01")
+      circle.classList.add("point", color)
+      svg.appendChild(circle)
+      
+      state.points.push({ element: circle, x, y, color })
+    })
+    
+    svg_states.set(svg, state)
+    svg.addEventListener('click', (e) => handle_click(svg, e))
+    
+    // Draw initial connections if any
+    if (initial_connections.length > 0) {
+      show_connections(svg, initial_connections)
+    }
+    
+    return svg
+  }
+
+  function handle_click(svg, e) {
+    const state = svg_states.get(svg)
+    const rect = svg.getBoundingClientRect()
+    const viewBox = svg.viewBox.baseVal
+    
+    // Transform into svg-coordinate-space
+    const x = viewBox.x + (e.clientX - rect.left) * viewBox.width / rect.width
+    const y = viewBox.y + (e.clientY - rect.top) * viewBox.height / rect.height
+    
+    // Try and get nearest point
+    let nearest = null
+    let min_dist = 0.1
+    state.points.forEach(point => {
+      const dist = Math.hypot(point.x - x, point.y - y)
+      if (dist < min_dist) {
+        min_dist = dist
+        nearest = point
+      }
+    })
+    
+    // No nearest point, give up?
+    if (!nearest) {
+      deactivate_all(state)
+      return
+    }
+    
+    // Try and make a connection!
+    if (!state.active_point) {
+      activate_point(state, nearest)
+    } else if (state.active_point === nearest) {
+      deactivate_all(state)
+    } else if (state.active_point.color !== nearest.color) {
+      create_connection(svg, state.active_point, nearest)
+      deactivate_all(state)
+    } else {
+      activate_point(state, nearest)
+    }
+  }
+
+  function activate_point(state, point) {
+    state.points.forEach(p => p.element.classList.remove('active'))
+    point.element.classList.add('active')
+    state.active_point = point
+  }
+
+  function deactivate_all(state) {
+    state.points.forEach(p => p.element.classList.remove('active'))
+    state.active_point = null
+  }
+
+  function create_connection(svg, point_a, point_b, skip_animation = false) {
+    const state = svg_states.get(svg)
+
+    // Remove existing connections for both points
+    remove_connections_for_points(svg, [point_a, point_b])
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line")
+    line.setAttribute("x1", point_a.x)
+    line.setAttribute("y1", point_a.y)
+    line.setAttribute("x2", point_b.x)
+    line.setAttribute("y2", point_b.y)
+    line.classList.add("connection")
+
+    svg.appendChild(line)
+
+    if (!skip_animation) {
+        const length = Math.hypot(point_b.x - point_a.x, point_b.y - point_a.y)
+        line.style.strokeDasharray = `${length} ${length}`
+        line.style.strokeDashoffset = length
+        
+        // Small delay ensures animation works
+        setTimeout(() => {
+        line.style.strokeDashoffset = 0
+        }, 10)
+    }
+
+    state.connections.push({ element: line, point_a, point_b })
+    check_intersections(svg)
+  }
+
+  function remove_connections_for_points(svg, points) {
+    const state = svg_states.get(svg)
+    const point_set = new Set(points)
+    
+    state.connections = state.connections.filter(conn => {
+      if (point_set.has(conn.point_a) || point_set.has(conn.point_b)) {
+        animate_out_and_remove(conn.element)
+        return false
+      }
+      return true
+    })
+  }
+
+  function animate_out_and_remove(element) {
+    const length = Math.hypot(
+      element.x2.baseVal.value - element.x1.baseVal.value,
+      element.y2.baseVal.value - element.y1.baseVal.value
+    )
+    element.style.strokeDashoffset = length
+    setTimeout(() => element.remove(), 500)
+  }
+
+  function check_intersections(svg) {
+    const state = svg_states.get(svg)
+    
+    state.connections.forEach(c => c.element.classList.remove('invalid'))
+    
+    for (let i = 0; i < state.connections.length; i++) {
+      for (let j = i + 1; j < state.connections.length; j++) {
+        if (segments_intersect(state.connections[i], state.connections[j])) {
+          state.connections[i].element.classList.add('invalid')
+          state.connections[j].element.classList.add('invalid')
+        }
+      }
+    }
+  }
+
+  function segments_intersect(conn_a, conn_b) {
+    const a1 = { x: conn_a.point_a.x, y: conn_a.point_a.y }
+    const a2 = { x: conn_a.point_b.x, y: conn_a.point_b.y }
+    const b1 = { x: conn_b.point_a.x, y: conn_b.point_a.y }
+    const b2 = { x: conn_b.point_b.x, y: conn_b.point_b.y }
+    
+    const det = (a2.x - a1.x) * (b2.y - b1.y) - (a2.y - a1.y) * (b2.x - b1.x)
+    if (Math.abs(det) < 1e-10) return false
+    
+    const t = ((b1.x - a1.x) * (b2.y - b1.y) - (b1.y - a1.y) * (b2.x - b1.x)) / det
+    const u = ((b1.x - a1.x) * (a2.y - a1.y) - (b1.y - a1.y) * (a2.x - a1.x)) / det
+    
+    return t > 0 && t < 1 && u > 0 && u < 1
+  }
+
+  function reset_svg(svg_id) {
+    const svg = document.getElementById(svg_id)
+    const state = svg_states.get(svg)
+    if (!state) return
+    
+    state.connections.forEach(conn => animate_out_and_remove(conn.element))
+    state.connections = []
+    deactivate_all(state)
+  }
+
+  function show_connections(svg_id, connection_pairs) {
+   const svg = document.getElementById(svg_id)
+   const state = svg_states.get(svg)
+   if (!state) return
+   
+   const find_point = (x, y) => 
+     state.points.find(p => Math.abs(p.x - x) < 0.001 && Math.abs(p.y - y) < 0.001)
+   
+   // Helper to check if two connections are the same (regardless of direction)
+   const same_connection = (conn, x1, y1, x2, y2) => {
+     return (Math.abs(conn.point_a.x - x1) < 0.001 && 
+             Math.abs(conn.point_a.y - y1) < 0.001 &&
+             Math.abs(conn.point_b.x - x2) < 0.001 && 
+             Math.abs(conn.point_b.y - y2) < 0.001) ||
+            (Math.abs(conn.point_a.x - x2) < 0.001 && 
+             Math.abs(conn.point_a.y - y2) < 0.001 &&
+             Math.abs(conn.point_b.x - x1) < 0.001 && 
+             Math.abs(conn.point_b.y - y1) < 0.001)
+   }
+   
+   // Mark which connections should stay
+   const to_keep = new Set()
+   connection_pairs.forEach(([x1, y1, x2, y2]) => {
+     state.connections.forEach((conn, idx) => {
+       if (same_connection(conn, x1, y1, x2, y2)) {
+         to_keep.add(idx)
+       }
+     })
+   })
+   
+   // Remove connections not in target
+   state.connections = state.connections.filter((conn, idx) => {
+     if (to_keep.has(idx)) return true
+     animate_out_and_remove(conn.element)
+     return false
+   })
+   
+   // Add missing connections
+   connection_pairs.forEach(([x1, y1, x2, y2]) => {
+     const already_exists = state.connections.some(conn => 
+       same_connection(conn, x1, y1, x2, y2)
+     )
+     
+     if (already_exists) return
+     
+     const point_a = find_point(x1, y1)
+     const point_b = find_point(x2, y2)
+     
+     if (!point_a || !point_b) return
+     
+     const line = document.createElementNS("http://www.w3.org/2000/svg", "line")
+     line.setAttribute("x1", point_a.x)
+     line.setAttribute("y1", point_a.y)
+     line.setAttribute("x2", point_b.x)
+     line.setAttribute("y2", point_b.y)
+     line.classList.add("connection")
+     
+     const length = Math.hypot(point_b.x - point_a.x, point_b.y - point_a.y)
+     line.style.strokeDasharray = `${length} ${length}`
+     line.style.strokeDashoffset = length
+     
+     svg.appendChild(line)
+     
+     setTimeout(() => {
+       line.style.strokeDashoffset = 0
+     }, 10)
+     
+     state.connections.push({ element: line, point_a, point_b })
+   })
+   
+   check_intersections(svg)
+ }
+</script>
+
+# Crossing Guard
+
+Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016/09/03/crossing-guard/):
+
+> Suppose some $2n$ points in the plane are chosen so that no three are collinear, and then half are colored red and half blue. Will it always be possible to connect each red point with a blue one, in pairs, so that none of the connecting lines intersect?
+
+"No three are collinear" means that no three points lie on a straight line. Although not specified, the "connection" between two points must be a straight line itself (otherwise it would always be easy to make such connections).
+
+<svg id="example">
 </svg>
 <div class="center">
   <button id="examplePointsOnly">Show points only</button>
@@ -64,78 +320,50 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
 </div>
 
 <script>
-function draw_point(svg, coordinates, blue_or_red) {
-  const point = document.createElementNS("http://www.w3.org/2000/svg", "circle")
-  point.setAttribute("cx", `${coordinates[0]}`)
-  point.setAttribute("cy", `${coordinates[1]}`)
-  point.setAttribute("r", "0.01")
-  point.classList.add("point")
-  point.classList.add(blue_or_red)
-  svg.appendChild(point)
-}
-function draw_connection(svg, point_a, point_b, classes = ["alwaysVisible"]) {
-  const connection = document.createElementNS("http://www.w3.org/2000/svg", "line")
-  connection.setAttribute("x1", `${point_a[0]}`)
-  connection.setAttribute("y1", `${point_a[1]}`)
-  connection.setAttribute("x2", `${point_b[0]}`)
-  connection.setAttribute("y2", `${point_b[1]}`)
-  connection.classList.add("connection")
-  connection.classList.add(...classes)
-  svg.appendChild(connection)
-}
 {
   const svg = document.getElementById("example")
-  const points = [[[0.54, 0.29], [0.73, 0.05]],
-  [[0.82, 0.98], [0.53, 0.86]],
-  [[0.41, 0.83], [0.44, 0.79]],
-  [[0.37, 0.42], [0.08, 0.3 ]],
-  [[0.1, 0.2], [0.35, 0.07]],
-  [[0.05, 0.78], [0.05, 0.28]],
-  [[0.76, 0.34], [0.87, 0.28]],
-  [[0.18, 0.67], [0.67, 0.51]],
-  [[0.16, 0.66], [0.47, 0.4 ]],
-  [[0.81, 0.85], [0.28, 0.74]]]
-  const bad_points = [[[0.05, 0.78], [0.35, 0.07]],
-  [[0.37, 0.42], [0.08, 0.3 ]],
-  [[0.54, 0.29], [0.73, 0.05]],
-  [[0.82, 0.98], [0.53, 0.86]],
-  [[0.41, 0.83], [0.44, 0.79]],
-  [[0.76, 0.34], [0.87, 0.28]],
-  [[0.1, 0.2], [0.05, 0.28]],
-  [[0.18, 0.67], [0.67, 0.51]],
-  [[0.16, 0.66], [0.47, 0.4 ]],
-  [[0.81, 0.85], [0.28, 0.74]]]
+  const good_connections = [[0.54, 0.29, 0.73, 0.05],
+  [0.82, 0.98, 0.53, 0.86],
+  [0.41, 0.83, 0.44, 0.79],
+  [0.37, 0.42, 0.08, 0.3 ],
+  [0.1, 0.2, 0.35, 0.07],
+  [0.05, 0.78, 0.05, 0.28],
+  [0.76, 0.34, 0.87, 0.28],
+  [0.18, 0.67, 0.67, 0.51],
+  [0.16, 0.66, 0.47, 0.4 ],
+  [0.81, 0.85, 0.28, 0.74]]
+  const bad_connections = [[0.05, 0.78, 0.35, 0.07],
+  [0.37, 0.42, 0.08, 0.3 ],
+  [0.54, 0.29, 0.73, 0.05],
+  [0.82, 0.98, 0.53, 0.86],
+  [0.41, 0.83, 0.44, 0.79],
+  [0.76, 0.34, 0.87, 0.28],
+  [0.1, 0.2, 0.05, 0.28],
+  [0.18, 0.67, 0.67, 0.51],
+  [0.16, 0.66, 0.47, 0.4 ],
+  [0.81, 0.85, 0.28, 0.74]]
+  let points = []
+  for (const [blue_x, blue_y, red_x, red_y] of good_connections) {
+    points.push([blue_x, blue_y, "blue"])
+    points.push([red_x, red_y, "red"])
+  }
 
-  // Draw good connections
-  for (const point of points) {
-    draw_connection(svg, point[0], point[1], ["goodHide"])
-  }
-  // Draw bad connections, draw red lines first
-  draw_connection(svg, bad_points[0][0], bad_points[0][1], ["badHide", "invalid"])
-  for (const point of bad_points.slice(1)) {
-    draw_connection(svg, point[0], point[1], ["badHide"])
-  }
-  // Draw points on top
-  for (const point of points) {
-    // doesn't really matter which one is blue and which one is red
-    draw_point(svg, point[0], "blue")
-    draw_point(svg, point[1], "red")
-  }
+  create_interactive_svg("example", "0 0 1 1", points)
+
   document.getElementById("examplePointsOnly").addEventListener("click", () => {
-    svg.classList.remove("showValid")
-    svg.classList.remove("showInvalid")
+    show_connections("example", [])
   })
+
   document.getElementById("exampleShowInvalid").addEventListener("click", () => {
-    svg.classList.remove("showValid")
-    svg.classList.add("showInvalid")
+    show_connections("example", bad_connections)
   })
+
   document.getElementById("exampleShowValid").addEventListener("click", () => {
-    svg.classList.add("showValid")
-    svg.classList.remove("showInvalid")
+    show_connections("example", good_connections)
   })
 }
 </script>
-
+<!--
 
 ## Appproaches that don't work
 
