@@ -450,10 +450,4 @@ This last idea can be made to work. We can always find a pair of points such tha
   }
 }
 </script>
-
-
-<!-- TODO:
-Make interactive.
-Can we use CSS animations instead of stroke-dasharray hacks?
-If not, is it worth the clunkiness to use animation-frames?
 -->
