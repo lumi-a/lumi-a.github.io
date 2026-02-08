@@ -17,6 +17,11 @@ title: Crossing Guard
     border: 1px solid #ccc;
     border-radius: 5px;
   }
+  svg.small {
+    width: 80%;
+    margin-left: 10%;
+    margin-right: 10%;
+  }
   svg circle.point {
     cursor: pointer;
   }
@@ -452,9 +457,9 @@ However, we need not put all points on one side of the connection. It would suff
 create_interactive_svg("badLine", "0 0 1 0.85", [[0.5, 0.5, "blue"], [0.5, 0.15, "red"], [0.803, 0.675, "blue"], [0.197, 0.675, "red"]])
 </script>
 
-No matter which red point you connect the center blue point with, the remaining red and blue point will end up on different sides of the connection (however, you could still connect them without intersecting with the existing connection).
+No matter which red point you connect the center blue point with, the remaining red and blue point will end up on different sides of the connection (but you could still connect them without _intersecting_ with the existing connection).
 
-However, notice that if we connect the _outer_ blue point with a red point, _then_ the remaining points end up on the same side.
+Notice that if we connect the _outer_ blue point with a red point, _then_ the remaining points end up on the same side.
 <svg id="betterLine" class="small">
 </svg>
 <script>
@@ -463,7 +468,9 @@ create_interactive_svg("betterLine", "0 0 1 0.85", [[0.5, 0.5, "blue"], [0.5, 0.
 
 
 ## A working approach
-This last idea can be made to work. We can always find a pair of points such that, if we connect them, both sides of the connections are _balanced_: The number of blue points and red points on the "left" side of the connection is equal, and the number of blue points and red points on the "right" side of the connection is equal. Note that, because we assumed that no three points are collinear, all points are on either the left or the right side of the connection.
+This last idea can be made to work. We can always find a pair of points such that, if we connect them, both sides of the connections are **balanced**: The number of blue points and red points on the "left" side of the connection is equal, and the number of blue points and red points on the "right" side of the connection is equal. Note that, because we assumed that no three points are collinear, all points are on either the left or the right side of the connection.
+
+Try finding a balanced connection for this example! This is somewhat difficult, as only 6.25% (16/256) of the connections are balanced.
 
 <svg id="hyperplaneSvg" viewBox="0 0 1 1"></svg>
   
@@ -478,7 +485,7 @@ This last idea can be made to work. We can always find a pair of points such tha
   </div>
   <div class="counter-row">
     <div class="counter red">
-      <span><span class="side-label left">Left:</span> Red <span id="leftRed">0</span> <span id="leftRedCheck"></span></span>
+      <span class="left-decoration"><span class="side-label">Left:</span> Red <span id="leftRed">0</span> <span id="leftRedCheck"></span></span>
     </div>
     <div class="counter red">
       <span><span class="side-label">Right:</span> Red <span id="rightRed">0</span> <span id="rightRedCheck"></span></span>
@@ -489,8 +496,8 @@ This last idea can be made to work. We can always find a pair of points such tha
 
 <script>
   const balancedConnections = [[0, 3], [0, 11], [0, 12], [0, 15], [1, 2], [2, 3], [3, 4], [4, 1], [5, 3], [6, 1], [6, 6], [8, 3], [9, 6], [10, 3], [11, 5], [14, 6]]
-  const redPoints = [[0.782608810904449, 0.215383019741831], [0.7800764019647675, 0.34321759672754604], [0.4482963578302878, 0.1194697560035939], [0.1346633644037209, 0.3413103555183366], [0.06683586425825924, 0.1469515440770221], [0.526730924738229, 0.12669667710259205], [0.1671420453311267, 0.10234488131342523], [0.8117876709859181, 0.51438807398215], [0.34526739570414616, 0.13071143471103047], [0.5335816208094655, 0.4907968613477179], [0.41973036610977843, 0.07689066234646619], [0.2395345973740276, 0.13710186858765117], [0.6213605092948428, 0.8580360097424653], [0.5222192300191391, 0.8722032516094983], [0.07488338759084597, 0.6968420038822234], [0.2901125249129467, 0.5156133929065837]]
-  const bluePoints = [[0.16222597070682504, 0.2415213861666461], [0.3528766468251009, 0.7190911151264505], [0.5635223690357274, 0.8796052472840002], [0.47552054717858266, 0.9414535581711121], [0.20158610547983447, 0.46187888986309517], [0.38440582609016, 0.6868172676443289], [0.348797495209178, 0.8848849311846316], [0.3589323384284045, 0.1735696100204765], [0.15636323363408117, 0.13344052006814722], [0.4542833121372101, 0.2908041071308217], [0.5226868628522884, 0.4275650971800061], [0.9459543781253772, 0.8454697921492772], [0.7916061810415032, 0.949803016592264], [0.4443406500187544, 0.18020287744500413], [0.5163289766719925, 0.31693087053044305], [0.5098857820635402, 0.9149993685686936]]
+  const redPoints = [[0.782, 0.215], [0.780, 0.343], [0.448, 0.119], [0.134, 0.341], [0.066, 0.146], [0.526, 0.126], [0.167, 0.102], [0.811, 0.514], [0.345, 0.130], [0.533, 0.490], [0.419, 0.076], [0.239, 0.137], [0.621, 0.858], [0.522, 0.872], [0.074, 0.696], [0.290, 0.515]]
+  const bluePoints = [[0.162, 0.241], [0.352, 0.719], [0.563, 0.879], [0.475, 0.941], [0.201, 0.461], [0.384, 0.686], [0.348, 0.884], [0.358, 0.173], [0.156, 0.133], [0.454, 0.290], [0.522, 0.427], [0.945, 0.845], [0.791, 0.949], [0.444, 0.180], [0.516, 0.316], [0.509, 0.914]]
   let balancedIndex = 0 // Which balanced connection did we last display?
   
   const svg = document.getElementById('hyperplaneSvg')
@@ -539,19 +546,8 @@ This last idea can be made to work. We can always find a pair of points such tha
   function updateHyperplane() {
     const [bx, by] = state.blueAnchor
     const [rx, ry] = state.redAnchor
-    
-    // Direction vector of the line
-    const dx = rx - bx
-    const dy = ry - by
-    
-    // Extend line to edges of viewbox
-    const t = 10; // Large extension factor
-    const x1 = bx - t * dx
-    const y1 = by - t * dy
-    const x2 = bx + t * dx
-    const y2 = by + t * dy
 
-    state.targetLine = { x1: x1, y1: y1, x2: x2, y2: y2 }
+    state.targetLine = { x1: rx, y1: ry, x2: bx, y2: by }
 
     renderHyperplane()
 
@@ -564,7 +560,7 @@ This last idea can be made to work. We can always find a pair of points such tha
     // Use current line position (important during animation)
     const { x1, y1, x2, y2 } = state.currentLine
 
-    if ((px == x1 && py == y1) || (px == x2 && py == y2)) return 'line'
+    if (Math.abs(px-x1)+Math.abs(py-y1) < 0.001 || Math.abs(px-x2)+Math.abs(py-y2) < 0.001) return 'line'
     
     // Direction vector
     const dx = x2 - x1
@@ -702,10 +698,20 @@ This last idea can be made to work. We can always find a pair of points such tha
     requestAnimationFrame(animate)
   }
   function renderHyperplane() {
-    hyperplane.setAttribute("x1", state.currentLine.x1)
-    hyperplane.setAttribute("y1", state.currentLine.y1)
-    hyperplane.setAttribute("x2", state.currentLine.x2)
-    hyperplane.setAttribute("y2", state.currentLine.y2)
+    const dx = state.currentLine.x2 - state.currentLine.x1
+    const dy = state.currentLine.y2 - state.currentLine.y1
+    
+    // Extend line to edges of viewbox
+    const t = 100; // Large extension factor
+    const x1 = state.currentLine.x1 - t * dx
+    const y1 = state.currentLine.y1 - t * dy
+    const x2 = state.currentLine.x1 + t * dx
+    const y2 = state.currentLine.y1 + t * dy
+
+    hyperplane.setAttribute("x1", x1)
+    hyperplane.setAttribute("y1", y1)
+    hyperplane.setAttribute("x2", x2)
+    hyperplane.setAttribute("y2", y2)
     
     updateCounts()
   }
@@ -725,5 +731,3 @@ This last idea can be made to work. We can always find a pair of points such tha
   updateHyperplane()
   updateActivePoints()
 </script>
-
-Finding balanced connections in this example is difficult: Only 6.25% (16/256) of the connections are balanced.
