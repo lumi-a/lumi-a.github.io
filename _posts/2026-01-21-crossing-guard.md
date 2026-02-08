@@ -498,7 +498,10 @@ This last idea can be made to work. We can always find a pair of points such tha
     blueAnchor: bluePoints[0],
     redAnchor: redPoints[0],
     bluePoints: [],
-    redPoints: []
+    redPoints: [],
+    currentLine: { x1: 0, y1: 0, x2: 1, y2: 1 },
+    targetLine: { x1: 0, y1: 0, x2: 1, y2: 1 },
+    animating: false
   }
   
   // Initialize SVG
@@ -547,23 +550,28 @@ This last idea can be made to work. We can always find a pair of points such tha
     const y1 = by - t * dy
     const x2 = bx + t * dx
     const y2 = by + t * dy
-    
-    hyperplane.setAttribute("x1", x1)
-    hyperplane.setAttribute("y1", y1)
-    hyperplane.setAttribute("x2", x2)
-    hyperplane.setAttribute("y2", y2)
-    
-    updateCounts()
+
+    state.targetLine = { x1: x1, y1: y1, x2: x2, y2: y2 }
+
+    renderHyperplane()
+
+    if (!state.animating) {
+      animateHyperplane();
+    }
   }
   
   function pointSide(px, py) {
-    const [bx, by] = state.blueAnchor
-    const [rx, ry] = state.redAnchor
+    // Use current line position (important during animation)
+    const { x1, y1, x2, y2 } = state.currentLine
 
-    if ((px == bx && py == by) || (px == rx && py == ry)) return 'line'
+    if ((px == x1 && py == y1) || (px == x2 && py == y2)) return 'line'
+    
+    // Direction vector
+    const dx = x2 - x1
+    const dy = y2 - y1
     
     // Cross product to determine side
-    const cross = (rx - bx) * (py - by) - (ry - by) * (px - bx)
+    const cross = dx * (py - y1) - dy * (px - x1)
     return cross > 0 ? 'left' : 'right'
   }
   
@@ -664,6 +672,43 @@ This last idea can be made to work. We can always find a pair of points such tha
     updateHyperplane()
     updateActivePoints()
   })
+
+  function animateHyperplane() {
+    const duration = 300
+    const startTime = performance.now()
+    const startLine = { ...state.currentLine }
+    const targetLine = { ...state.targetLine }
+    
+    state.animating = true
+    
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      
+      state.currentLine.x1 = startLine.x1 + (targetLine.x1 - startLine.x1) * progress
+      state.currentLine.y1 = startLine.y1 + (targetLine.y1 - startLine.y1) * progress
+      state.currentLine.x2 = startLine.x2 + (targetLine.x2 - startLine.x2) * progress
+      state.currentLine.y2 = startLine.y2 + (targetLine.y2 - startLine.y2) * progress
+      
+      renderHyperplane()
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      } else {
+        state.animating = false
+      }
+    }
+    
+    requestAnimationFrame(animate)
+  }
+  function renderHyperplane() {
+    hyperplane.setAttribute("x1", state.currentLine.x1)
+    hyperplane.setAttribute("y1", state.currentLine.y1)
+    hyperplane.setAttribute("x2", state.currentLine.x2)
+    hyperplane.setAttribute("y2", state.currentLine.y2)
+    
+    updateCounts()
+  }
   
   document.getElementById('nextBalanced').addEventListener('click', () => {
     const [redIdx, blueIdx] = balancedConnections[balancedIndex]
