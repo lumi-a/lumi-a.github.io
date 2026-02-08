@@ -725,3 +725,5 @@ This last idea can be made to work. We can always find a pair of points such tha
   updateHyperplane()
   updateActivePoints()
 </script>
+
+Finding balanced connections in this example is difficult: Only 6.25% (16/256) of the connections are balanced.
