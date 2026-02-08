@@ -4,30 +4,36 @@ title: Crossing Guard
 ---
 
 <style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 600px;
+    margin: 2em auto;
+    padding: 1em;
+  }
   svg {
-    max-width: 550px;
     width: 100%;
     height: auto;
     display: block;
-    margin: 2em auto;
     border: 1px solid #ccc;
     border-radius: 5px;
   }
-  svg.small {
-    max-width: 425px;
-  }
-  svg.tiny {
-    max-width: 350px;
+  svg circle.point {
+    cursor: pointer;
   }
   svg circle.point.red {
     fill: #E67; /* // https://sronpersonalpages.nl/~pault/ */
   }
   svg circle.point.blue {
-    fill: #47A; 
+    fill: #47A;
   }
   svg circle.point.active {
     stroke: #888;
     stroke-width: 0.005;
+  }
+  svg circle.point.left-side {
+    stroke: #333;
+    stroke-width: 0.003;
+    stroke-dasharray: 0.01 0.0025;
   }
   svg line.connection {
     stroke: #888;
@@ -38,11 +44,34 @@ title: Crossing Guard
   svg line.connection.invalid {
     stroke: #A37;
   }
+  svg line.hyperplane {
+    stroke: #333;
+    stroke-width: 0.003;
+  }
   div.center {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 0.5em;
+  }
+  .counter-row {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.95em;
+  }
+  .counter.blue { color: #47A; }
+  .counter.red { color: #E67; }
+  .side-label {
+    font-weight: 500;
+  }
+  span.left-decoration {
+    text-decoration: underline dashed #333;
+  }
+   .controls {
+    margin-top: 1em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
   }
 </style>
 <script>
@@ -331,6 +360,8 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
 
 "No three are collinear" means that no three points lie on a straight line. Although not specified, the "connection" between two points must be a straight line itself (otherwise it would always be easy to make such connections).
 
+Try finding a solution for this example!
+
 <svg id="example">
 </svg>
 <div class="center">
@@ -384,6 +415,8 @@ Futility Closet posed [the following puzzle](https://www.futilitycloset.com/2016
 }
 </script>
 
+Finding a solution for this one example is not very difficult, but we want to prove that a solution exists for _every_ possible puzzle.
+
 ## Appproaches that don't work
 
 Trying to provide all the connections at once, and proving that they do not intersect, seems difficult. Instead, I thought, it would help to only provide _one_ connection, and somehow prove that the puzzle remains possible.
@@ -413,7 +446,7 @@ Trying to connect an "outermost" pair does not work, i.e. a pair such that all o
 
 However, we need not put all points on one side of the connection. It would suffice to have a connection such that, on the "left" side of the connection, the number of blue and red points is equal, and on the "right" side of the connection, the number of blue and red points is equal. I considered starting with some fixed blue point, and somehow checking all the red points for possible connections. However, that need not work, either, consider the blue point in the center here:
 <svg id="badLine" class="small">
-<circle cx="0.5" cy="0.5" r="0.018" fill="none" style="stroke:#888; stroke-width:0.005; stroke-dasharray:0.005,0.005"/>
+<circle cx="0.5" cy="0.5" r="0.018" fill="none" style="stroke:#888; stroke-width:0.005; stroke-dasharray:0.011,0.005"/>
 </svg>
 <script>
 create_interactive_svg("badLine", "0 0 1 0.85", [[0.5, 0.5, "blue"], [0.5, 0.15, "red"], [0.803, 0.675, "blue"], [0.197, 0.675, "red"]])
@@ -428,26 +461,222 @@ However, notice that if we connect the _outer_ blue point with a red point, _the
 create_interactive_svg("betterLine", "0 0 1 0.85", [[0.5, 0.5, "blue"], [0.5, 0.15, "red"], [0.803, 0.675, "blue"], [0.197, 0.675, "red"]], [[0.803, 0.675, 0.5, 0.15]])
 </script>
 
-<!--
 
 ## A working approach
 This last idea can be made to work. We can always find a pair of points such that, if we connect them, both sides of the connections are _balanced_: The number of blue points and red points on the "left" side of the connection is equal, and the number of blue points and red points on the "right" side of the connection is equal. Note that, because we assumed that no three points are collinear, all points are on either the left or the right side of the connection.
 
+<svg id="hyperplaneSvg" viewBox="0 0 1 1"></svg>
+  
+<div class="controls">
+  <div class="counter-row">
+    <div class="counter blue">
+      <span class="left-decoration"><span class="side-label">Left:</span> Blue <span id="leftBlue">0</span> <span id="leftBlueCheck"></span></span>
+    </div>
+    <div class="counter blue">
+      <span><span class="side-label">Right:</span> Blue <span id="rightBlue">0</span> <span id="rightBlueCheck"></span></span>
+    </div>
+  </div>
+  <div class="counter-row">
+    <div class="counter red">
+      <span><span class="side-label left">Left:</span> Red <span id="leftRed">0</span> <span id="leftRedCheck"></span></span>
+    </div>
+    <div class="counter red">
+      <span><span class="side-label">Right:</span> Red <span id="rightRed">0</span> <span id="rightRedCheck"></span></span>
+    </div>
+  </div>
+  <button id="nextBalanced">Show balanced connection</button>
+</div>
 
-<svg viewbox="0 0 1 1" id="balancedLines" xmlns="http://www.w3.org/2000/svg">
-</svg>
 <script>
-{
-  const svg = document.getElementById("balancedLines")
-  const balancedConnections = [[0, 6], [2, 7], [3, 5], [4, 1], [5, 5], [6, 4], [7, 15], [8, 2], [9, 9], [10, 14], [11, 9], [11, 10], [12, 4], [13, 0], [14, 11], [15, 3]]
-  const redPoints = [[0.9406050357791532, 0.30217291120143713], [0.19920320003059871, 0.2761466456011049], [0.7834827372941037, 0.32314636565929133], [0.49072417266887736, 0.20744256756711438], [0.8468964675313825, 0.2015890165427336], [0.3625180215490413, 0.19950161371144526], [0.47090564885368763, 0.317252059770297], [0.6189387421466723, 0.2471649166544181], [0.904313208455598, 0.4443145183570353], [0.6800220816554267, 0.43668350637827336], [0.6532759366701174, 0.574994893245021], [0.740853013374749, 0.09240684229040436], [0.6577262549451347, 0.14462605097184855], [0.7975336324934315, 0.31413016587393117], [0.2293099584596482, 0.17799852551183776], [0.7451405368624647, 0.3862619733112171]]
-  const bluePoints = [[0.7231752713243366, 0.5547656728233739], [0.787343523520555, 0.38197360851725837], [0.7224294811117647, 0.7214683895364428], [0.7215557228419519, 0.4496705811633159], [0.39660411196038814, 0.6349332955192127], [0.33145868459221767, 0.47631668813111083], [0.8677564959525109, 0.4291674975522184], [0.7463696109410137, 0.4623406602257559], [0.6322282973579857, 0.3712183579257316], [0.41171379776461015, 0.8501986023253991], [0.1115221854941684, 0.08959811406688026], [0.08528056296249104, 0.7095587478690922], [0.3983530552162603, 0.26334213093534137], [0.5645513023065665, 0.24485694670904185], [0.5283633497622343, 0.9145898874754527], [0.5059810093217636, 0.5159489164213025]]
-  for (let point of bluePoints) {
-    draw_point(svg, point, "blue")
+  const balancedConnections = [[0, 3], [0, 11], [0, 12], [0, 15], [1, 2], [2, 3], [3, 4], [4, 1], [5, 3], [6, 1], [6, 6], [8, 3], [9, 6], [10, 3], [11, 5], [14, 6]]
+  const redPoints = [[0.782608810904449, 0.215383019741831], [0.7800764019647675, 0.34321759672754604], [0.4482963578302878, 0.1194697560035939], [0.1346633644037209, 0.3413103555183366], [0.06683586425825924, 0.1469515440770221], [0.526730924738229, 0.12669667710259205], [0.1671420453311267, 0.10234488131342523], [0.8117876709859181, 0.51438807398215], [0.34526739570414616, 0.13071143471103047], [0.5335816208094655, 0.4907968613477179], [0.41973036610977843, 0.07689066234646619], [0.2395345973740276, 0.13710186858765117], [0.6213605092948428, 0.8580360097424653], [0.5222192300191391, 0.8722032516094983], [0.07488338759084597, 0.6968420038822234], [0.2901125249129467, 0.5156133929065837]]
+  const bluePoints = [[0.16222597070682504, 0.2415213861666461], [0.3528766468251009, 0.7190911151264505], [0.5635223690357274, 0.8796052472840002], [0.47552054717858266, 0.9414535581711121], [0.20158610547983447, 0.46187888986309517], [0.38440582609016, 0.6868172676443289], [0.348797495209178, 0.8848849311846316], [0.3589323384284045, 0.1735696100204765], [0.15636323363408117, 0.13344052006814722], [0.4542833121372101, 0.2908041071308217], [0.5226868628522884, 0.4275650971800061], [0.9459543781253772, 0.8454697921492772], [0.7916061810415032, 0.949803016592264], [0.4443406500187544, 0.18020287744500413], [0.5163289766719925, 0.31693087053044305], [0.5098857820635402, 0.9149993685686936]]
+  let balancedIndex = 0 // Which balanced connection did we last display?
+  
+  const svg = document.getElementById('hyperplaneSvg')
+  const state = {
+    blueAnchor: bluePoints[0],
+    redAnchor: redPoints[0],
+    bluePoints: [],
+    redPoints: []
   }
-  for (let point of redPoints) {
-    draw_point(svg, point, "red")
+  
+  // Initialize SVG
+  const hyperplaneGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
+  const pointGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
+  
+  svg.appendChild(hyperplaneGroup)
+  svg.appendChild(pointGroup)
+  
+  const hyperplane = document.createElementNS("http://www.w3.org/2000/svg", "line")
+  hyperplane.classList.add("hyperplane")
+  hyperplaneGroup.appendChild(hyperplane)
+  
+  // Create points
+  bluePoints.forEach(([x, y], i) => {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+    circle.setAttribute("cx", x)
+    circle.setAttribute("cy", y)
+    circle.setAttribute("r", "0.01")
+    circle.classList.add("point", "blue")
+    pointGroup.appendChild(circle)
+    state.bluePoints.push({ element: circle, x, y, index: i })
+  })
+  
+  redPoints.forEach(([x, y], i) => {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+    circle.setAttribute("cx", x)
+    circle.setAttribute("cy", y)
+    circle.setAttribute("r", "0.01")
+    circle.classList.add("point", "red")
+    pointGroup.appendChild(circle)
+    state.redPoints.push({ element: circle, x, y, index: i })
+  })
+  
+  function updateHyperplane() {
+    const [bx, by] = state.blueAnchor
+    const [rx, ry] = state.redAnchor
+    
+    // Direction vector of the line
+    const dx = rx - bx
+    const dy = ry - by
+    
+    // Extend line to edges of viewbox
+    const t = 10; // Large extension factor
+    const x1 = bx - t * dx
+    const y1 = by - t * dy
+    const x2 = bx + t * dx
+    const y2 = by + t * dy
+    
+    hyperplane.setAttribute("x1", x1)
+    hyperplane.setAttribute("y1", y1)
+    hyperplane.setAttribute("x2", x2)
+    hyperplane.setAttribute("y2", y2)
+    
+    updateCounts()
   }
-}
+  
+  function pointSide(px, py) {
+    const [bx, by] = state.blueAnchor
+    const [rx, ry] = state.redAnchor
+
+    if ((px == bx && py == by) || (px == rx && py == ry)) return 'line'
+    
+    // Cross product to determine side
+    const cross = (rx - bx) * (py - by) - (ry - by) * (px - bx)
+    return cross > 0 ? 'left' : 'right'
+  }
+  
+  function updateCounts() {
+    let leftBlue = 0, leftRed = 0, rightBlue = 0, rightRed = 0
+    
+    state.bluePoints.forEach(p => {
+      const side = pointSide(p.x, p.y)
+      if (side === 'left') {
+        leftBlue++
+        p.element.classList.add("left-side")
+      } else {
+        p.element.classList.remove("left-side")
+        if (side === 'right') rightBlue++
+      }
+    })
+    
+    state.redPoints.forEach(p => {
+      const side = pointSide(p.x, p.y)
+      if (side === 'left') {
+        leftRed++
+        p.element.classList.add("left-side")
+      } else {
+        p.element.classList.remove("left-side")
+        if (side === 'right') rightRed++
+      }
+    })
+    
+    document.getElementById('leftBlue').textContent = leftBlue
+    document.getElementById('leftRed').textContent = leftRed
+    document.getElementById('rightBlue').textContent = rightBlue
+    document.getElementById('rightRed').textContent = rightRed
+    
+    const leftBalanced = leftBlue === leftRed
+    const rightBalanced = rightBlue === rightRed
+    
+    document.getElementById('leftBlueCheck').textContent = leftBalanced ? '✅' : '❌'
+    document.getElementById('leftRedCheck').textContent = leftBalanced ? '✅' : '❌'
+    document.getElementById('rightBlueCheck').textContent = rightBalanced ? '✅' : '❌'
+    document.getElementById('rightRedCheck').textContent = rightBalanced ? '✅' : '❌'
+  }
+  
+  function updateActivePoints() {
+    // Remove all active classes
+    [...state.bluePoints, ...state.redPoints].forEach(p => {
+      p.element.classList.remove('active')
+    })
+    
+    // Add active to current anchors
+    state.bluePoints.forEach(p => {
+      if (p.x === state.blueAnchor[0] && p.y === state.blueAnchor[1]) {
+        p.element.classList.add('active')
+      }
+    })
+    
+    state.redPoints.forEach(p => {
+      if (p.x === state.redAnchor[0] && p.y === state.redAnchor[1]) {
+        p.element.classList.add('active')
+      }
+    })
+  }
+  
+  svg.addEventListener('click', (e) => {
+    const rect = svg.getBoundingClientRect()
+    const viewBox = svg.viewBox.baseVal
+    
+    const x = viewBox.x + (e.clientX - rect.left) * viewBox.width / rect.width
+    const y = viewBox.y + (e.clientY - rect.top) * viewBox.height / rect.height
+    
+    let nearestBlue = null
+    let nearestRed = null
+    let minDistBlue = 0.05
+    let minDistRed = 0.05
+    
+    state.bluePoints.forEach(p => {
+      const dist = Math.hypot(p.x - x, p.y - y)
+      if (dist < minDistBlue) {
+        minDistBlue = dist
+        nearestBlue = p
+      }
+    })
+    
+    state.redPoints.forEach(p => {
+      const dist = Math.hypot(p.x - x, p.y - y)
+      if (dist < minDistRed) {
+        minDistRed = dist
+        nearestRed = p
+      }
+    })
+    
+    // Update whichever is closer
+    if (nearestBlue && (!nearestRed || minDistBlue < minDistRed)) {
+      state.blueAnchor = [nearestBlue.x, nearestBlue.y]
+    } else if (nearestRed) {
+      state.redAnchor = [nearestRed.x, nearestRed.y]
+    }
+    
+    updateHyperplane()
+    updateActivePoints()
+  })
+  
+  document.getElementById('nextBalanced').addEventListener('click', () => {
+    const [redIdx, blueIdx] = balancedConnections[balancedIndex]
+    state.blueAnchor = bluePoints[blueIdx]
+    state.redAnchor = redPoints[redIdx]
+    
+    balancedIndex = (balancedIndex + 1) % balancedConnections.length
+    
+    updateHyperplane()
+    updateActivePoints()
+  })
+  
+  // Initial render
+  updateHyperplane()
+  updateActivePoints()
 </script>
--->
